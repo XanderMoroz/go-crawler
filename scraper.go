@@ -1,12 +1,14 @@
 package main
 
 import (
+	"encoding/json"
 	"log"
+	"os"
 
 	"github.com/gocolly/colly/v2"
 )
 
-type product struct {
+type Product struct {
 	Title  string `json:"title"`
 	Link   string `json:"url"`
 	Price  string `json:"price"`
@@ -18,7 +20,7 @@ func main() {
 		colly.AllowedDomains("japonica.kz"),
 	)
 
-	var myProducts []product
+	var myProducts []Product
 
 	c.OnRequest(func(r *colly.Request) {
 		log.Println("Visiting", r.URL)
@@ -31,10 +33,14 @@ func main() {
 	// })
 
 	c.OnHTML("div.catalog-block__inner", func(h *colly.HTMLElement) {
-		// log.Println("Found an div tag!")
-		item := product{
+		// log.Println("Found an body tag!")
+		// log.Println(h.ChildText("a.dark_link"))
+		// log.Println(h.ChildText("span.price__new-val"))
+		// log.Println(h.ChildText("span.status-icon"))
+		// log.Println(h.ChildAttr("a.dark_link", "href"))
+		item := Product{
 			Title:  h.ChildText("a.dark_link"),
-			Link:   "https://japonica.kz" + h.ChildAttr("a.image-list__link", "href"),
+			Link:   "https://japonica.kz" + h.ChildAttr("a.dark_link", "href"),
 			Price:  h.ChildText("span.price__new-val"),
 			Status: h.ChildText("span.status-icon"),
 		}
@@ -42,20 +48,23 @@ func main() {
 		myProducts = append(myProducts, item)
 	})
 
-	// c.OnError(func(_ *colly.Response, err error) {
-	// 	log.Println("Something went wrong:", err)
+	// c.OnHTML("a.arrows-pagination__next", func(h *colly.HTMLElement) {
+	// 	next_page := h.Request.AbsoluteURL(h.Attr("href"))
+	// 	log.Println(h.Request.AbsoluteURL(h.Attr("href")))
+	// 	c.Visit(next_page)
+
 	// })
 
-	c.Visit("https://japonica.kz/catalog/yaponskaya-apteka/assortiment/?PAGEN_1=1")
+	c.Visit("https://japonica.kz/catalog/podarochnye-sertifikaty/")
 
 	log.Println("Извлечено", len(myProducts))
 
-	// content, err := json.Marshal(myProducts)
+	content, err := json.Marshal(myProducts)
 
-	// if err != nil {
-	// 	log.Println(err.Error())
-	// }
+	if err != nil {
+		log.Println(err.Error())
+	}
 
-	// os.WriteFile("products.json", content, 066)
-	// c.Visit("https://japonica.kz/catalog/yaponskaya-apteka/assortiment/")
+	os.WriteFile("products.json", content, 0644)
+
 }
